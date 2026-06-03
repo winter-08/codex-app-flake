@@ -14,11 +14,11 @@ jobs:
     name: Update Linux release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.CODEX_APP_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: DeterminateSystems/nix-installer-action@v17
+      - uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Update package metadata
         run: nix run .#update-codex-app
@@ -31,7 +31,7 @@ jobs:
 
       - name: Create pull request
         id: cpr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.CODEX_APP_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           branch: updates/codex-app
