@@ -1,0 +1,50 @@
+name: Update codex-app
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update Linux release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CODEX_APP_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: DeterminateSystems/nix-installer-action@v17
+
+      - name: Update package metadata
+        run: nix run .#update-codex-app
+
+      - name: Check flake
+        run: nix flake check --print-build-logs
+
+      - name: Build package
+        run: nix build .#codex-app --print-build-logs
+
+      - name: Create pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.CODEX_APP_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+          branch: updates/codex-app
+          delete-branch: true
+          commit-message: "chore: update codex-app"
+          title: "chore: update codex-app"
+          body: |
+            Updates the packaged Linux AppImage from the latest `am-will/codex-app` release.
+          labels: dependencies, automated
+
+      - name: Enable auto-merge
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.CODEX_APP_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        run: gh pr merge --auto --squash "$PR_URL"
